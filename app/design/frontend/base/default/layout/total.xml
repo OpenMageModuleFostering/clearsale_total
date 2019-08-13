@@ -1,0 +1,61 @@
+<layout version="0.1.0">
+    <checkout_onepage_index>
+	    <reference name="head">
+           <block type="core/template" name="meta_checkout" template="total/meta_checkout.phtml" />
+        </reference>
+        <reference name="content">
+            <block type="core/template" name="frontend_fingerprint" template="total/fingerprint.phtml" />
+        </reference>
+		<reference name="content">
+            <block type="core/template" name="mapper" template="total/mapper.phtml" />
+        </reference>
+    </checkout_onepage_index>
+	<customer_account_create>
+	  <reference name="head">
+           <block type="core/template" name="meta_account_create" template="total/meta_account_create.phtml" />
+        </reference>
+		<reference name="content">
+            <block type="core/template" name="mapper" template="total/mapper.phtml" />
+        </reference>
+	</customer_account_create>
+	<customer_account_edit>
+	  <reference name="head">
+           <block type="core/template" name="meta_account_edit" template="total/meta_account_edit.phtml" />
+        </reference>
+		<reference name="content">
+            <block type="core/template" name="mapper" template="total/mapper.phtml" />
+        </reference>
+	</customer_account_edit>
+	<customer_account_forgotpassword>
+	  <reference name="head">
+           <block type="core/template" name="meta_password_reset" template="total/meta_password_reset.phtml" />
+        </reference>
+		<reference name="content">
+            <block type="core/template" name="mapper" template="total/mapper.phtml" />
+        </reference>
+	</customer_account_forgotpassword>
+	<checkout_cart_index>
+		<reference name="head">
+           <block type="core/template" name="meta_cart" template="total/meta_cart.phtml" />
+        </reference>
+		<reference name="content">
+            <block type="core/template" name="mapper" template="total/mapper.phtml" />
+        </reference>
+	</checkout_cart_index>
+	<checkout_onepage_success>
+		<reference name="head">
+           <block type="core/template" name="meta_purchase_confirmation" template="total/meta_purchase_confirmation.phtml" />
+        </reference>
+		<reference name="content">
+            <block type="core/template" name="mapper" template="total/mapper.phtml" />
+        </reference>
+	</checkout_onepage_success>
+	<contacts_index_index>
+	<reference name="head">
+           <block type="core/template" name="meta_contact" template="total/meta_contact.phtml" />
+        </reference>
+		<reference name="content">
+            <block type="core/template" name="mapper" template="total/mapper.phtml" />
+        </reference>
+	</contacts_index_index>
+</layout>

@@ -1,0 +1,10 @@
+<?php 
+$isActive = Mage::getStoreConfig("tab1/general/active");
+
+if ($isActive) 
+{
+print_r("<meta name=\"cs:page\" content=\"product\">");
+print_r("<meta name=\"cs:description\" content=\"name=".$name.", sku=".$sku."\">");
+}
+
+?>

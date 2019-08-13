@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config>
+  <modules>
+    <ClearSale_Total>
+      <active>true</active>
+      <codePool>community</codePool>
+      <version>1.0.0</version>
+    </ClearSale_Total>
+  </modules>
+</config>

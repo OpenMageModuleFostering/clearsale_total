@@ -1,0 +1,31 @@
+
+<?php
+
+require_once("/app/Mage.php");
+
+$user = Mage::getStoreConfig("tab1/general/clientid");
+
+?>   
+
+<?php 
+$isActive = Mage::getStoreConfig("tab1/general/active");
+
+if ($isActive) 
+{
+
+$script =   "<script>";
+	$script .=  "(function (a, b, c, d, e, f, g) {"."\n";
+	$script .=  "a['CsdmObject'] = e; a[e] = a[e] || function () {"."\n";
+	$script .=  "(a[e].q = a[e].q || []).push(arguments) "."\n";
+	$script .=  "}, a[e].l = 1 * new Date(); f = b.createElement(c),"."\n";
+	$script .=  "g = b.getElementsByTagName(c)[0]; f.async = 1; f.src = d; g.parentNode.insertBefore(f, g)"."\n";
+	$script .=  "})(window, document, 'script', '//device.clearsale.com.br/m/cs.js', 'csdm');"."\n";
+	$script .=  "csdm('app', '".$user."');"."\n";
+	$script .=  "</script>"."\n";
+	
+	echo $script;
+	
+
+}
+
+?>

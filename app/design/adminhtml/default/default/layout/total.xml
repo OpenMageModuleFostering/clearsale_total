@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<layout version="0.1.0">
+ <total_adminhtml_totalbackend_index>
+ <reference name="head"> 
+ <action method="addJs"><script>clearsale/total/jquery-2.1.1.min.js</script></action>  
+ <action method="addJs"><script>clearsale/total/noconflict.js</script></action>  
+ <action method="addJs"><script>clearsale/total/bootstrap.min.js</script></action>  
+ <action method="addJs"><script>clearsale/total/formats.js</script></action> 
+ <action method="addJs"><script>clearsale/total/timeago.js</script></action> 
+ <action method="addJs"><script>clearsale/total/Plugin/morris.min.js</script></action>   
+ <action method="addJs"><script>clearsale/total/Plugin/raphael.min.js</script></action>    
+ <!--<action method="addJs"><script>clearsale/total/Graphs/graph-data.js</script></action>-->
+ <action method="addItem"><type>skin_css</type><file>clearsale/total/bootstrap.min.css</file></action>
+ <action method="addItem"><type>skin_css</type><file>clearsale/total/dashboard.css</file></action>
+ <action method="addItem"><type>skin_css</type><file>clearsale/total/app.css</file></action>
+ <action method="addItem"><type>skin_css</type><file>clearsale/total/material-design-iconic-font.min.css</file></action>
+ </reference>
+	<reference name="content">
+	  <block type="total/adminhtml_totalbackend" name="totalbackend" template="total/totalbackend.phtml"/>
+	</reference>
+  </total_adminhtml_totalbackend_index>
+
+  </layout>
