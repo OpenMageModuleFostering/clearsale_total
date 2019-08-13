@@ -15,11 +15,22 @@ if ($isActive)
     
      if($apikey == $_GET["apikey"])
      {
-        $obj = Mage::getModel('total/observer');
+		 if($_GET["action"])
+		 {
+			 $obj = Mage::getModel('total/observer');
+			 $action =  $_GET["action"];
+		    if($action == 'get')
+			{
+			 echo "Buscar<br />";	
+			 $obj->getClearsaleOrderStatus();
+			}else if($action= 'send')
+			{
+			 echo "Enviar<br />";
+			 $obj->sendPendingOrders();
+			}
 
-        $obj->getClearsaleOrderStatus();
-
-        echo "OK";
+          echo "OK";
+		 }
      }
     }
 }

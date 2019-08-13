@@ -4,6 +4,7 @@ class Clearsale_Total_Model_Utils_Status
 {
 public function toMagentoStatus($clearSaleStatus)
 	{
+		$status = '';
 		switch($clearSaleStatus)
 		{
 		case "NVO" :
@@ -16,6 +17,7 @@ public function toMagentoStatus($clearSaleStatus)
 		case "APM" :
 		case "APA" : $status = "approved_clearsale";break;
 		case "CAN" : $status = "canceled_clearsale";break;
+		case "PED" : $status = "pending_clearsale";break;
 			break;
 		}
 		

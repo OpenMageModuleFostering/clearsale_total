@@ -14,84 +14,50 @@ class Clearsale_Total_Model_Order_Entity_RequestOrder
 class Clearsale_Total_Model_Observer
 {
 	
-	public function sendOrder()
+	public function create($evt)
 	{
-		try {	
-			$isActive = Mage::getStoreConfig("clearsale_total/general/active");
+		$csLog = Mage::getSingleton('total/log');
+	try {	
 
-			if ($isActive) 
+		$isActive = Mage::getStoreConfig("clearsale_total/general/active");
+
+		if ($isActive) 
+	    {
+			$csLog->log('gravar pedido');	
+			$session = Mage::getSingleton("core/session")->getEncryptedSessionId();
+			$orderBO = Mage::getModel('total/order_business_object');	
+			$magentoOrder = $evt->getOrder();//new Mage_Sales_Model_Order();
+			$orderID = $magentoOrder->getRealOrderId();//Mage::getSingleton('checkout/session')->getQuoteId(); 	
+			//$magentoOrder->loadByIncrementId($orderID);
+			$payment = $magentoOrder->getPayment();
+			$csStatus = array('pending_clearsale','approved_clearsale','reproved_clearsale','canceled_clearsale','analysing_clearsale');
+			$CreditcardMethods = explode(",", Mage::getStoreConfig("clearsale_total/general/credicardmethod"));
+			$magentoStatus = $magentoOrder->getStatus();
+			
+			$csLog->log('Status : ' . $magentoStatus . ' ID: ' . $orderID  );
+			
+			if($payment)
 			{
-				
-				$order = new Mage_Sales_Model_Order();
-				$incrementId = Mage::getSingleton('checkout/session')->getLastRealOrderId(); 
-				$order->loadByIncrementId($incrementId);
-				$isReanalysis = false;
-				$payment = $order->getPayment();
-				$environment = Mage::getStoreConfig("clearsale_total/general/environment");
-				$analysisLocation = Mage::getStoreConfig("clearsale_total/general/analysislocation");
-				$CreditcardMethods = explode(",", Mage::getStoreConfig("clearsale_total/general/credicardmethod"));
-
+				if (!in_array($magentoStatus,$csStatus))
+				{
+					
 				if (in_array($payment->getMethodInstance()->getCode(), $CreditcardMethods))
 				{
-					$authBO = Mage::getModel('total/auth_business_object');
-					$authResponse = $authBO->login($environment);			
-					$clearSaleOrder = $this->toClearsaleOrderObject($order,$isReanalysis,$analysisLocation);			 
-					$requestOrder = new Clearsale_Total_Model_Order_Entity_RequestOrder();
-					$requestOrder->ApiKey = Mage::getStoreConfig("clearsale_total/general/key");
-					$requestOrder->LoginToken = $authResponse->Token->Value;
-					$requestOrder->AnalysisLocation = $analysisLocation;
-					$requestOrder->Orders[0] = $clearSaleOrder;			  
-					
-					$orderBO = Mage::getModel('total/order_business_object');
-                                        
-					$response = $orderBO->send($requestOrder,$environment);
-					
-					if($response->HttpCode == 200)
-					{
-						$orderResponse = json_decode($response->Body);
-					
-						if($orderResponse)
-						{
-							if($orderResponse->Orders)
-							{
-                                                            $orderBO->save($orderResponse->Orders[0]);							
-							}
-						}
-					}
-					else if($response->Body) 
-					{
-					  if(strpos(strtolower($response->Body),"exists"))
-					  {
-					   $orderStatus = new Clearsale_Total_Model_Order_Entity_Status();
-					   $orderStatus->ID = $incrementId;	
-					   $orderStatus->Status = "AMA";
-					   $orderStatus->Score = "";
-					   $orderBO->save($orderStatus);
-					  }
-					}
-					else
-					{
-					  $message[1] = $response->Body;
-					  $orderBO->createOrderControl($order->getRealOrderId(),json_encode($message));
-					} 					
+					$order = new Clearsale_Total_Model_Order_Entity_Status();
+					$payment->setAdditionalInformation('clearsaleSessionID', $session);				
+					$order->ID = $orderID;
+					$order->Status = 'PED';
+					$orderBO->save($order);
+					$csLog->log('gravar pedido - OK');	
+				}
 				}
 			}			
-		} 
-		catch (Exception $e) {
-                    
-			$csLog = Mage::getSingleton('total/log');			
-			$csLog->log($e->getMessage());
-                        $message = array();
-                        $message[1] = $e->getMessage();
-			$incrementId = Mage::getSingleton('checkout/session')->getLastRealOrderId(); 
-                        $orderBO = Mage::getModel('total/order_business_object');
-			$orderBO->createOrderControl($incrementId,json_encode($message));
-			
+		 }
+		}catch(Exception $e){                    
+			$csLog->log($e->getMessage());		
 		}
-		
-		
 	}
-			
+				
 	public function getClearsaleOrderStatus()
 	{
 	 $isActive = Mage::getStoreConfig("clearsale_total/general/active");
@@ -392,9 +358,16 @@ class Clearsale_Total_Model_Observer
 			
 			$clearsaleOrder->TotalOrder  = $order->getGrandTotal();
 			$clearsaleOrder->TotalItems = $TotalItems;
-			$clearsaleOrder->TotalShipping = $order->getShippingInclTax();
-			$clearsaleOrder->SessionID = Mage::getSingleton("core/session")->getEncryptedSessionId();
+			$clearsaleOrder->TotalShipping = $order->getShippingInclTax();			
 			
+			$sessionID = $payment->getAdditionalInformation('clearsaleSessionID');
+			
+			if(empty($sessionID))
+			{
+				$sessionID = session_id();
+			}
+			
+			 $clearsaleOrder->SessionID = $sessionID;
 			
 			return $clearsaleOrder;
 			
@@ -443,8 +416,7 @@ class Clearsale_Total_Model_Observer
 			return 4;
 		}
 	}
-	
-	
+		
 	public function getCategoryName($product)
 	{
 		$categoryIds = $product->getCategoryIds();
@@ -531,23 +503,23 @@ class Clearsale_Total_Model_Observer
 
     public function sendSpecificOrder($orderId)
 	{
+		$csLog = Mage::getSingleton('total/log');	
 		try {	
 			$isActive = Mage::getStoreConfig("clearsale_total/general/active");
 
 			if ($isActive) 
 			{
-				
+				$csLog->log('Enviar Order ->' . $orderId);
 				$order = new Mage_Sales_Model_Order(); 
 				$order->loadByIncrementId($orderId);
-				$isReanalysis = false;
-				$storeId = $order->getStoreId();
-				$payment = $order->getPayment();
-				$environment = Mage::getStoreConfig("clearsale_total/general/environment",$storeId);
-				$analysisLocation = Mage::getStoreConfig("clearsale_total/general/analysislocation",$storeId);
-				$CreditcardMethods = explode(",", Mage::getStoreConfig("clearsale_total/general/credicardmethod"));
-
-				if (in_array($payment->getMethodInstance()->getCode(), $CreditcardMethods))
+				if(!empty($order))
 				{
+					$isReanalysis = false;
+					$storeId = $order->getStoreId();
+					$payment = $order->getPayment();
+					$environment = Mage::getStoreConfig("clearsale_total/general/environment",$storeId);
+					$analysisLocation = Mage::getStoreConfig("clearsale_total/general/analysislocation",$storeId);
+					$CreditcardMethods = explode(",", Mage::getStoreConfig("clearsale_total/general/credicardmethod"));
 					$authBO = Mage::getModel('total/auth_business_object');
 					$authResponse = $authBO->login($environment);			
 					$clearSaleOrder = $this->toClearsaleOrderObject($order,$isReanalysis,$analysisLocation);			 
@@ -558,16 +530,17 @@ class Clearsale_Total_Model_Observer
 					$requestOrder->Orders[0] = $clearSaleOrder;			  
 					
 					$orderBO = Mage::getModel('total/order_business_object');
-                                                                              
+																			
 					$response = $orderBO->send($requestOrder,$environment);
 					
+					$csLog->log('<br />Enviar Order ->' . $orderId . ' OK ');
 					return $response;			
 				}
 			}			
 		} 
 		catch (Exception $e) {
                     
-			$csLog = Mage::getSingleton('total/log');			
+					
 			$csLog->log($e->getMessage());
 		}
 		
@@ -613,146 +586,64 @@ class Clearsale_Total_Model_Observer
 		}
 	}
 	
-	public function getOrderAll()
+	
+	public function sendPendingOrders()
 	{
 		require_once('app/Mage.php');
 		Mage::app();
 		
 		$isActive = Mage::getStoreConfig("clearsale_total/general/active");
-
-		
-		if ($isActive) 
-		{
-		try
-		 {		
-		
-		 $time = time();
-		 $to = date('Y-m-d H:i:s', $time);
-		 $lastTime = $time - 86400; // 60*60*24
-                 $from = date('Y-m-d H:i:s', $lastTime);
-
-		  echo "lastTime $lastTime <br />";	
-		
-			$orders = Mage::getModel('sales/order')->getCollection()
-			->addFieldToFilter('status', array('null' => true))
-			->addAttributeToFilter('created_at', array('from' => $from, 'to' => $to));			
-					
-			if($orders)
-			{
-				foreach ($orders as $order) {
-
-				 $storeId = $order->getStoreId();
-				
-				 $environment = Mage::getStoreConfig("clearsale_total/general/environment",$storeId);
-				 $analysisLocation = Mage::getStoreConfig("clearsale_total/general/analysislocation",$storeId);
-				 $authBO = Mage::getModel('total/auth_business_object');
-				 $authResponse = $authBO->login($environment);
-				 $orderBO = Mage::getModel('total/order_business_object');				
-				
-				 if($authResponse)
-				 {	 
-				  $orderId = $order->getRealOrderId();				 
-				  $requestOrder =  Mage::getModel('total/order_entity_requestorder');
-				  $requestOrder->ApiKey =  Mage::getStoreConfig("clearsale_total/general/key",$storeId);
-				  $requestOrder->LoginToken = $authResponse->Token->Value;;
-				  $requestOrder->AnalysisLocation = $analysisLocation;
-				  $requestOrder->Orders = array();
-				  $requestOrder->Orders[0] = $orderId;			
-				  $ResponseOrder = $orderBO->get($requestOrder,$environment);			
-				  $orderBO->Update($ResponseOrder->Orders[0]);			
-				 }
-				
-				}
-			}
-		 } 
-		catch (Exception $e) 
-		 {			
-		  $csLog = Mage::getSingleton('total/log');			
-		  $csLog->log($e->getMessage());			
-		 }
-		}
-	
-	}
-
-	public function retry()
-	{
-	
-	  require_once('app/Mage.php');
-		Mage::app();
-		
-		$isActive = Mage::getStoreConfig("clearsale_total/general/active");
-		$csLog = Mage::getSingleton('total/log');	
-		
+			
 			
 		if ($isActive) 
-		{
-				
+		{	
+			$csLog = Mage::getSingleton('total/log');			
 			$orderBO = Mage::getModel('total/order_business_object');	
 			
-			$orders = $orderBO->getOrderControl();
+			$time = time();
+			$to = date('Y-m-d H:i:s', $time);
+			$lastTime = $time - 86400; // 60*60*24
+            $from = date('Y-m-d H:i:s', $lastTime);
+		
+			$orders = Mage::getModel('sales/order')->getCollection()
+			->addFieldToFilter('status', 'pending_clearsale')
+			->addAttributeToFilter('created_at', array('from' => $from, 'to' => $to));	
 						
 			if($orders)
 			{
-				foreach ($orders as $orderControl) 
+				foreach ($orders as $order) 
 				{
-                                      try
+                    try
 					{	
-					
-                                            $orderId = $orderControl["order_id"];
-                                            $attemps = $orderControl["attempts"];
-                                            
-                                            $message = $orderControl["diagnostics"];
-                                            $messages = array();
-                                            $messages = json_decode($message,true);
-                                            $attemps = $attemps + 1;
-							
-                                            $response = $this->sendSpecificOrder($orderId);
+						$orderId =  $order->getRealOrderId();					
+						$response = $this->sendSpecificOrder($orderId);
 						
-                                            if($response->HttpCode == 200)
-                                                {
-                                                    $orderResponse = json_decode($response->Body);
+						if($response->HttpCode == 200)
+						{
+							$orderResponse = json_decode($response->Body);
 						
-                                                    if($orderResponse)
-                                                    {
-                                                        if($orderResponse->Orders)
+							if($orderResponse)
 							{
-                                                             $orderBO->save($orderResponse->Orders[0]);	
-                                                             $orderBO->setOrderControl($orderId,true,$attemps,$message);							    
+								if(!empty($orderResponse->Orders))
+									 $orderBO->Update($orderResponse->Orders[0]);				    
 							}
-                                                    }
-						}
-						else if($response->Body) 
+						}else if(strpos(strtolower($response->Body),"exists"))
 						{
-						$csLog = Mage::getSingleton('total/log');			
-						$csLog->log("Atualizando o pedido 1");
-						if(strpos(strtolower($response->Body),"exists"))
-						{
-						 $csLog->log("Atualizando o pedido 2");
-						 $orderStatus = new Clearsale_Total_Model_Order_Entity_Status();
-						 $orderStatus->ID = $orderControl["order_id"];	
-						 $orderStatus->Status = "AMA";
-						 $orderStatus->Score = "";
-						 $orderBO->save($orderStatus);
-						 $orderBO->setOrderControl($orderStatus->ID,true,$attemps,$message);
+						 $csLog->log('atualizar pedido');
+					     $orderStatus = new Clearsale_Total_Model_Order_Entity_Status();
+						 $orderStatus->ID = $orderId;
+						 $orderStatus->Status = 'AMA';
+						 $orderBO->Update($orderStatus);
+						 $csLog->log('atualizar pedido - OK');	
 						}
-						}
-						else
-						{
-						 $messages[$attemps] = $response->Body;
-						 $message= json_encode($messages);				 
-						 $orderBO->setOrderControl($orderId,false,$attemps,$message);
-						}
-                                        } catch (Exception $e) 
-                                        {			
-                                            $csLog = Mage::getSingleton('total/log');			
-                                            $csLog->log($e->getMessage());			
 					}
-				
-                                    }
+					catch (Exception $e) {                    		
+						$csLog->log($e->getMessage());
+					}
+				}	
 			}
-			
-		
 		}
 	}
-    
+	
+
  }

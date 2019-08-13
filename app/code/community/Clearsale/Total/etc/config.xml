@@ -24,6 +24,11 @@
 			</clearsaleorderdiagnostic>
 		</entities>
 	  </total_mysql4>
+	<paygate>
+     <rewrite>
+        <authorizenet>Clearsale_Total_Model_Authorizenet</authorizenet>
+     </rewrite>
+    </paygate>
     </models>
     <blocks>
       <total>
@@ -67,15 +72,15 @@
    			</clearsale_total>
    		</observers>
    	</sales_order_payment_place_start>
-   	<checkout_onepage_controller_success_action>
+   	<sales_order_save_after>
    		<observers>
    			<clearsale_total>
    				<type>singleton</type>
    				<class>Clearsale_Total_Model_Observer</class>
-   				<method>sendOrder</method>
+   				<method>create</method>
    			</clearsale_total>
    		</observers>
-   	</checkout_onepage_controller_success_action>
+   	</sales_order_save_after>
    </events> 
  <frontend>
 	<routers>
