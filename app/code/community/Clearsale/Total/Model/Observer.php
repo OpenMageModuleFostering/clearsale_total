@@ -52,243 +52,7 @@ class Clearsale_Total_Model_Observer
 		
 		
 	}
-	
-		public function sendHistoricalOrders()
-	{
-		try {	
-		
-			$orders = Mage::getModel('sales/order')->getCollection();
 			
-			foreach($orders as $order)
-			{	
-				$isReanalysis = false;
-				$payment = $order->getPayment();
-				$environment = Mage::getStoreConfig("clearsale_total/general/environment");
-				$CreditcardMethods = explode(",", Mage::getStoreConfig("clearsale_total/general/credicardmethod"));
-
-				if (in_array($payment->getMethodInstance()->getCode(), $CreditcardMethods))
-				{
-					$authBO = Mage::getModel('total/auth_business_object');
-					$authResponse = $authBO->login($environment);			
-					$clearSaleOrder = $this->toClearsaleOrderObject2($order,$isReanalysis,$environment,"History");			 
-					$requestOrder = new Clearsale_Total_Model_Order_Entity_RequestOrder();
-					$requestOrder->ApiKey = Mage::getStoreConfig("clearsale_total/general/key");
-					$requestOrder->LoginToken = $authResponse->Token->Value;
-					$requestOrder->AnalysisLocation = "USA";
-					$requestOrder->Orders[0] = $clearSaleOrder;			  
-					
-					$orderBO = Mage::getModel('total/order_business_object');
-					$orderResponse = $orderBO->send($requestOrder,$environment);	
-					echo "Order n:".$order->getRealOrderId()." sent <br />";					
-				}
-			}
-		} 
-		catch (Exception $e) {
-
-			$csLog = Mage::getSingleton('total/log');			
-			$csLog->log($e->getMessage());		
-			
-		}
-		
-		
-	}
-	
-	
-	public function toClearsaleOrderObject2(Mage_Sales_Model_Order  $order,$isReanalysis,$location,$obs){
-		
-		try {
-			
-			$customerModel = Mage::getModel('customer/customer');
-			$customer = $customerModel->load($order->getCustomerId());			
-			$email =$customer->getEmail();		
-			
-			if (!$email) 
-			{
-				$email = $order->getBillingAddress()->getEmail();
-			}		
-
-			if($location == "BRA")
-			{
-				$legalDocument = preg_replace('/[^0-9]/', '', $customer->getTaxvat());
-				$currency = "BRL";
-			}else
-			{
-				$currency = "USD";
-				$legalDocument = "";
-			}
-			
-			$date = new DateTime($order->getCreatedAt());
-			$date = date('c', strtotime($order->getCreatedAt()));			
-
-			$clearsaleOrder = new Clearsale_Total_Model_Order_Entity_Order();
-			$clearsaleOrder->ID = $order->getRealOrderId();
-			$clearsaleOrder->IP = Mage::helper('core/http')->getRemoteAddr();
-			$clearsaleOrder->Currency = $currency;
-			$clearsaleOrder->Date = $date;
-			$clearsaleOrder->Reanalysis = $isReanalysis;
-			$clearsaleOrder->Email = $email;
-			$clearsaleOrder->TotalOrder = number_format(floatval($order->getGrandTotal()), 2, ".", "");
-			
-			$StatusHandle = new Clearsale_Total_Model_Utils_Status();
-			$statusCS = $StatusHandle->toClearSaleStatus($order->getStatus());
-			$clearsaleOrder->Status =  $statusCS;
-			echo "Status :".$statusCS."<br />";
-			
-			if($obs != "")
-			{
-			  $clearsaleOrder->Obs = $obs;	
-			}
-			
-			$items = $order->getAllItems();
-			$payment = $order->getPayment();
-			
-			$billingAddress = $order->getBillingAddress();
-			$shippingAddress = $order->getShippingAddress();
-			$dob = $customer->getDob();
-			$dob = $date;
-			
-			if(!$billingAddress)
-			{
-				$billingAddress = $shippingAddress;
-			}
-			
-			if(!$shippingAddress)
-			{
-				$shippingAddress = $billingAddress;
-			}			
-			
-			$billingName = $billingAddress->getFirstname() . " " . $billingAddress->getMiddlename() . " " . $billingAddress->getLastname();
-			$billingName = trim(str_replace("  ", " ", $billingName));
-			$billingCountry = Mage::getModel('directory/country')->loadByCode($billingAddress->getCountry());
-			$billingPhone = preg_replace('/[^0-9]/', '', $billingAddress->getTelephone());
-
-			$shippingName = $shippingAddress->getFirstname() . " " . $shippingAddress->getMiddlename() . " " . $shippingAddress->getLastname();
-			$shippingName = trim(str_replace("  ", " ", $shippingName));
-			$shippingCountry = Mage::getModel('directory/country')->loadByCode($shippingAddress->getCountry());
-			$shippingPhone = preg_replace('/[^0-9]/', '', $shippingAddress->getTelephone());
-
-			$paymentType = 1;
-			$creditcardBrand = 0;
-			$paymentIndex = 0;
-
-			$creditcardMethods = explode(",", Mage::getStoreConfig("clearsale_total/general/credicardmethod"));			
-			
-			$clearsaleOrder->Payments[$paymentIndex] = new Clearsale_Total_Model_Order_Entity_Payment();
-			$clearsaleOrder->Payments[$paymentIndex]->Amount = number_format(floatval($order->getGrandTotal()), 2, ".", "");
-			$clearsaleOrder->Payments[$paymentIndex]->Type = 14;	
-			$clearsaleOrder->Payments[$paymentIndex]->CardType = 4;
-			$clearsaleOrder->Payments[$paymentIndex]->Date = $date;			 
-			
-			if ($payment->getMethodInstance()->getCode() == "authorizenet")
-			{
-
-				if (in_array($payment->getMethodInstance()->getCode(), $creditcardMethods)) {
-					
-					$clearsaleOrder->Payments[$paymentIndex]->Type = 1;	
-					
-					$creditcardBrand = 4;
-					$paymentData = $payment->getData("additional_data");
-
-					if (strripos($paymentData, "diners") !== false)
-					$creditcardBrand = 1;
-
-					if (strripos($paymentData, "mastercard") !== false)
-					$creditcardBrand = 2;
-
-					if (strripos($paymentData, "visa") !== false)
-					$creditcardBrand = 3;
-
-					if ((strripos($paymentData, "amex") !== false) || (strripos($paymentData, "american express") !== false))
-					$creditcardBrand = 5;
-
-					if (strripos($paymentData, "hipercard") !== false)
-					$creditcardBrand = 6;
-
-					if (strripos($paymentData, "aura") !== false)
-					$creditcardBrand = 7;
-
-					if (strripos($paymentData, "carrefour") !== false)
-					$creditcardBrand = 8;								
-				
-				 $clearsaleOrder->Payments[$paymentIndex]->CardBin =  $payment->getAdditionalInformation('clearsaleCCBin');
-				 $clearsaleOrder->Payments[$paymentIndex]->CardHolderName = $payment->getCcOwner();				
-				 $clearsaleOrder->Payments[$paymentIndex]->CardType = $creditcardBrand;	
-				 $clearsaleOrder->Payments[$paymentIndex]->CardEndNumber = $payment->getCcLast4();
-				 $clearsaleOrder->Payments[$paymentIndex]->PaymentTypeID = 1;
-				 
-				}
-			}
-			
-
-			$clearsaleOrder->BillingData = new Clearsale_Total_Model_Order_Entity_Person();
-			$clearsaleOrder->BillingData->ID = "1";
-			$clearsaleOrder->BillingData->Email = $email;
-			$clearsaleOrder->BillingData->BirthDate = $dob;
-			$clearsaleOrder->BillingData->Name = $billingName;
-			$clearsaleOrder->BillingData->Type = 1;  
-			$clearsaleOrder->BillingData->Gender = 'M';	
-			$clearsaleOrder->BillingData->Address->City = $billingAddress->getCity();
-			$clearsaleOrder->BillingData->Address->County = $billingAddress->getStreetFull();
-			$clearsaleOrder->BillingData->Address->Street = $billingAddress->getStreet(1);
-			$clearsaleOrder->BillingData->Address->Number = $billingAddress->getStreet(2);
-			$clearsaleOrder->BillingData->Address->State = $shippingAddress->getRegion();
-			$clearsaleOrder->BillingData->Address->ZipCode = preg_replace('/[^0-9]/', '', $billingAddress->getPostcode());
-			$clearsaleOrder->BillingData->Phones[0] = new Clearsale_Total_Model_Order_Entity_Phone();
-			$clearsaleOrder->BillingData->Phones[0]->AreaCode = substr($billingPhone, 0, 3);
-			$clearsaleOrder->BillingData->Phones[0]->Number = $billingPhone;
-			$clearsaleOrder->BillingData->Phones[0]->CountryCode = "1";            
-			$clearsaleOrder->BillingData->Phones[0]->Type = 1;
-
-			$clearsaleOrder->ShippingData = new Clearsale_Total_Model_Order_Entity_Person();
-			$clearsaleOrder->ShippingData->ID = "1";
-			$clearsaleOrder->ShippingData->Email = $email;
-			$clearsaleOrder->ShippingData->LegalDocument = $legalDocument;
-			$clearsaleOrder->ShippingData->BirthDate = $dob;
-			$clearsaleOrder->ShippingData->Name = 'teste';
-			$clearsaleOrder->ShippingData->Gender = 'M';
-			$clearsaleOrder->ShippingData->Type = 1;
-
-			$clearsaleOrder->ShippingData->Address->City = $shippingAddress->getCity();
-			$clearsaleOrder->ShippingData->Address->County = $shippingAddress->getStreetFull();
-			$clearsaleOrder->ShippingData->Address->Street = $shippingAddress->getStreet(1);
-			$clearsaleOrder->ShippingData->Address->Number = $shippingAddress->getStreet(2);
-			$clearsaleOrder->ShippingData->Address->State = $shippingAddress->getRegion();
-			$clearsaleOrder->ShippingData->Address->ZipCode = preg_replace('/[^0-9]/', '', $shippingAddress->getPostcode());
-			$clearsaleOrder->ShippingData->Phones[0] = new Clearsale_Total_Model_Order_Entity_Phone();
-			$clearsaleOrder->ShippingData->Phones[0]->AreaCode = substr($shippingPhone, 0, 2);
-			$clearsaleOrder->ShippingData->Phones[0]->CountryCode = "1";
-			$clearsaleOrder->ShippingData->Phones[0]->Number = substr($shippingPhone, 2, 9);
-			$clearsaleOrder->ShippingData->Phones[0]->Type = 1;
-
-			$itemIndex = 0;
-			$TotalItems = 0;
-			
-			foreach ($items as $item) {
-				$clearsaleOrder->Items[$itemIndex] = new Clearsale_Total_Model_Order_Entity_Item();
-				$clearsaleOrder->Items[$itemIndex]->Price = number_format(floatval($item->getPrice()), 2, ".", "");
-				$clearsaleOrder->Items[$itemIndex]->ProductId = $item->getSku();
-				$clearsaleOrder->Items[$itemIndex]->ProductTitle = $item->getName();
-				$clearsaleOrder->Items[$itemIndex]->Quantity = intval($item->getQtyOrdered());
-				//$clearsaleOrder->Items[0]->Category = getCategoryName($item);
-				$TotalItems += $clearsaleOrder->Items[$itemIndex]->Price;
-				$itemIndex++;				
-			}
-			
-			$clearsaleOrder->TotalOrder  = $order->getGrandTotal();
-			$clearsaleOrder->TotalItems = $TotalItems;
-			$clearsaleOrder->TotalShipping = $order->getShippingInclTax();
-			$clearsaleOrder->SessionID = Mage::getSingleton("core/session")->getEncryptedSessionId();
-			
-			
-			return $clearsaleOrder;
-			
-		} catch (Exception $e) {
-			$csLog = Mage::getSingleton('total/log');			
-			$csLog->log($e->getMessage());		
-		}
-	}
-	
-	
 	public function getClearsaleOrderStatus()
 	{
 		require_once('app/Mage.php');
@@ -339,7 +103,7 @@ class Clearsale_Total_Model_Observer
 			}
 		}
 	}
-	
+
 	public function toClearsaleOrderObject(Mage_Sales_Model_Order  $order,$isReanalysis,$location){
 		
 		try {
@@ -415,7 +179,6 @@ class Clearsale_Total_Model_Observer
 			$clearsaleOrder->Payments[$paymentIndex]->CardType = 4;
 			$clearsaleOrder->Payments[$paymentIndex]->Date = $date;			 
 			
-			//if (in_array($payment->getMethodInstance()->getCode(), $creditcardMethods))
 			if($payment->getAdditionalInformation('clearsaleCCNumber'))
 			{
 
@@ -424,7 +187,14 @@ class Clearsale_Total_Model_Observer
 					$clearsaleOrder->Payments[$paymentIndex]->Type = 1;	
 					
 					$creditcardBrand = 4;
-					$paymentData = $payment->getData("additional_data");
+					//$paymentData = $payment->getData("additional_data");
+					
+					$paymentData = $payment->getData('cc_type');
+					
+					if($paymentData)
+					{
+					  $paymentData = strtolower($paymentData); 
+					}
 
 					if (strripos($paymentData, "diners") !== false)
 					$creditcardBrand = 1;
@@ -445,29 +215,33 @@ class Clearsale_Total_Model_Observer
 					$creditcardBrand = 7;
 
 					if (strripos($paymentData, "carrefour") !== false)
-					$creditcardBrand = 8;
-				
-								
+					$creditcardBrand = 8;		
+
+				 $clearsaleOrder->Payments[$paymentIndex]->CardEndNumber = $payment->getAdditionalInformation('clearsaleCCLast4');
 				 $clearsaleOrder->Payments[$paymentIndex]->CardBin =  $payment->getAdditionalInformation('clearsaleCCBin');
-				 $clearsaleOrder->Payments[$paymentIndex]->CardHolderName = $payment->getCcOwner();				
+				 $clearsaleOrder->Payments[$paymentIndex]->CardHolderName = $payment->getAdditionalInformation('clearsaleCCHolderName');				
 				 $clearsaleOrder->Payments[$paymentIndex]->CardType = $creditcardBrand;				
 				 $clearsaleOrder->Payments[$paymentIndex]->PaymentTypeID = 1;
+				 
 				}
 			}
 			
-
+			$countryCode =  $billingAddress->getCountry();
+			$country = Mage::getModel('directory/country')->loadByCode($countryCode);
+			$countryname = $country->getName();
+			
 			$clearsaleOrder->BillingData = new Clearsale_Total_Model_Order_Entity_Person();
 			$clearsaleOrder->BillingData->ID = "1";
 			$clearsaleOrder->BillingData->Email = $email;
 			$clearsaleOrder->BillingData->BirthDate = $dob;
-			//$clearsaleOrder->BillingData->LegalDocument = '11111111111';
 			$clearsaleOrder->BillingData->Name = $billingName;
 			$clearsaleOrder->BillingData->Type = 1;  
 			$clearsaleOrder->BillingData->Gender = 'M';	
 			$clearsaleOrder->BillingData->Address->City = $billingAddress->getCity();
-			$clearsaleOrder->BillingData->Address->County = $billingAddress->getStreetFull();
+			$clearsaleOrder->BillingData->Address->Country = $countryname;
 			$clearsaleOrder->BillingData->Address->Street = $billingAddress->getStreet(1);
-			$clearsaleOrder->BillingData->Address->Number = $billingAddress->getStreet(2);
+			$arr = explode(' ',trim($billingAddress->getStreetFull()));
+			$clearsaleOrder->BillingData->Address->Number = $arr[0];
 			$clearsaleOrder->BillingData->Address->State = $shippingAddress->getRegion();
 			$clearsaleOrder->BillingData->Address->ZipCode = preg_replace('/[^0-9]/', '', $billingAddress->getPostcode());
 			$clearsaleOrder->BillingData->Phones[0] = new Clearsale_Total_Model_Order_Entity_Phone();
@@ -475,26 +249,31 @@ class Clearsale_Total_Model_Observer
 			$clearsaleOrder->BillingData->Phones[0]->Number = $billingPhone;
 			$clearsaleOrder->BillingData->Phones[0]->CountryCode = "1";            
 			$clearsaleOrder->BillingData->Phones[0]->Type = 1;
+			
+			$countryCode =  $shippingAddress->getCountry();
+			$country = Mage::getModel('directory/country')->loadByCode($countryCode);
+			$countryname = $country->getName();
 
 			$clearsaleOrder->ShippingData = new Clearsale_Total_Model_Order_Entity_Person();
 			$clearsaleOrder->ShippingData->ID = "1";
 			$clearsaleOrder->ShippingData->Email = $email;
 			$clearsaleOrder->ShippingData->LegalDocument = $legalDocument;
 			$clearsaleOrder->ShippingData->BirthDate = $dob;
-			$clearsaleOrder->ShippingData->Name = 'teste';
+			$clearsaleOrder->ShippingData->Name = $shippingName;
 			$clearsaleOrder->ShippingData->Gender = 'M';
 			$clearsaleOrder->ShippingData->Type = 1;
 
 			$clearsaleOrder->ShippingData->Address->City = $shippingAddress->getCity();
-			$clearsaleOrder->ShippingData->Address->County = $shippingAddress->getStreetFull();
+			$clearsaleOrder->ShippingData->Address->Country = $countryname;
 			$clearsaleOrder->ShippingData->Address->Street = $shippingAddress->getStreet(1);
-			$clearsaleOrder->ShippingData->Address->Number = $shippingAddress->getStreet(2);
+			$arr = explode(' ',trim($shippingAddress->getStreetFull()));
+			$clearsaleOrder->ShippingData->Address->Number = $arr[0];
 			$clearsaleOrder->ShippingData->Address->State = $shippingAddress->getRegion();
 			$clearsaleOrder->ShippingData->Address->ZipCode = preg_replace('/[^0-9]/', '', $shippingAddress->getPostcode());
 			$clearsaleOrder->ShippingData->Phones[0] = new Clearsale_Total_Model_Order_Entity_Phone();
-			$clearsaleOrder->ShippingData->Phones[0]->AreaCode = substr($shippingPhone, 0, 2);
+			$clearsaleOrder->ShippingData->Phones[0]->AreaCode = substr($shippingPhone, 0, 3);
 			$clearsaleOrder->ShippingData->Phones[0]->CountryCode = "1";
-			$clearsaleOrder->ShippingData->Phones[0]->Number = substr($shippingPhone, 2, 9);
+			$clearsaleOrder->ShippingData->Phones[0]->Number = $shippingPhone;
 			$clearsaleOrder->ShippingData->Phones[0]->Type = 1;
 
 			$itemIndex = 0;
@@ -525,6 +304,7 @@ class Clearsale_Total_Model_Observer
 		}
 	}
 	
+
 	
 	public function getCategoryName($product)
 	{
