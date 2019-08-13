@@ -17,7 +17,15 @@ public function login($enviroment) {
 		$authRequest->Login->ClientID = Mage::getStoreConfig("clearsale_total/general/clientid");
 		$authRequest->Login->ClientSecret =Mage::getStoreConfig("clearsale_total/general/clientsecret");	
 		$response = $this->Http->postData($authRequest, $url);	
-		return $response;
+                
+                $credentials = "";
+                
+                if($response->HttpCode == 200)
+                {
+                    $credentials = json_decode($response->Body);
+                }
+                
+		return $credentials;
 	}
 
 public function logout($enviroment) {
@@ -27,7 +35,15 @@ public function logout($enviroment) {
 		$authRequest->Login->ClientSecret =Mage::getStoreConfig("clearsale_total/general/clientsecret");
 		$url = $enviroment."api/auth/logout/";
 		$response = $this->Http->postData($authRequest, $url);
-		return $response;
+		     
+                $credentials = "";
+                
+                if($response->HttpCode == 200)
+                {
+                    $credentials = json_decode($response->Body);
+                }
+                
+		return $credentials;
 	}
 }
    

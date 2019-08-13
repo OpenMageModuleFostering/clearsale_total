@@ -29,6 +29,19 @@ if ($isActive)
 	$script .=  "</script>";
 	
 	echo $script;
+	
+	$tmTags  = "<!-- Início das tags de profiling -->";
+	$tmTags .= "<p style=\"background:url(https://h.online-metrix.net/fp/clear.png?org_id=k6dvnkdk&amp;session_id=".$sessionID."&amp;m=1)\">";
+	$tmTags .= "</p>";
+	$tmTags .= "<img src=\"https://h.online-metrix.net/fp/clear.png?org_id=k6dvnkdk&amp;session_id=".$sessionID."&amp;m=2\" alt=\"\" >";
+	$tmTags .= "<script src=\"https://h.online-metrix.net/fp/check.js?org_id=k6dvnkdk&amp;session_id=".$sessionID."\" type=\"text/javascript\">";
+	$tmTags .= "</script>";
+	$tmTags .= "<object type=\"application/x-shockwave-flash\" data=\"https://h.online-metrix.net/fp/fp.swf?org_id=k6dvnkdk&amp;session_id=".$sessionID."\" width=\"1\" height=\"1\" id=\"obj_id\">";
+	$tmTags .= "<param name=\"movie\" value=\"https://h.online-metrix.net/fp/fp.swf?org_id=k6dvnkdk&amp;session_id=".$sessionID."\" />";
+	$tmTags .= "</object>";
+	$tmTags .= "<!-- Fim das tags de profiling -->";
+	
+	echo $tmTags;
 }
 
 ?>

@@ -1,8 +1,9 @@
 <?php
 $installer = $this;
 $installer->startSetup();
+
 $sql=<<<SQLTEXT
-CREATE TABLE clearsale_order_description (
+CREATE TABLE IF NOT EXISTS `clearsale_order_diagnostic` (
 	order_id VARCHAR(20) ,
 	clearsale_status VARCHAR(50),
 	score VARCHAR(5),
@@ -33,7 +34,6 @@ $status = Mage::getModel('sales/order_status');
 $status->setStatus('analysing_clearsale');
 $status->setLabel('Analysing ClearSale');
 $status->save();
-
 
 $installer->endSetup();
 	 

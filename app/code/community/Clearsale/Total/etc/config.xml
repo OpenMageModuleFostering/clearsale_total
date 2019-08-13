@@ -2,7 +2,7 @@
 <config>
   <modules>
     <Clearsale_Total>
-      <version>1.0.1</version>
+      <version>1.1.0</version>
     </Clearsale_Total>
   </modules>
   <global>
@@ -54,26 +54,26 @@
 		</connection>
 	</total_read>
   </resources>
-	<events>
-		<sales_order_payment_place_start>
-			<observers>
-				<clearsale_total>
-				<type>singleton</type>
-					<class>Clearsale_Total_Model_Observer</class>
-					<method>getCCInfo</method>
-				</clearsale_total>
-			</observers>
-		</sales_order_payment_place_start>
-		<checkout_onepage_controller_success_action>
-			<observers>
-				<clearsale_total>
-					<type>singleton</type>
-					<class>Clearsale_Total_Model_Observer</class>
-					<method>sendOrder</method>
-				</clearsale_total>
-			</observers>
-		</checkout_onepage_controller_success_action>
-	</events> 
+   <events>
+   	<sales_order_payment_place_start>
+   		<observers>
+   			<clearsale_total>
+   			<type>singleton</type>
+   				<class>Clearsale_Total_Model_Observer</class>
+   				<method>getCCInfo</method>
+   			</clearsale_total>
+   		</observers>
+   	</sales_order_payment_place_start>
+   	<checkout_onepage_controller_success_action>
+   		<observers>
+   			<clearsale_total>
+   				<type>singleton</type>
+   				<class>Clearsale_Total_Model_Observer</class>
+   				<method>sendOrder</method>
+   			</clearsale_total>
+   		</observers>
+   	</checkout_onepage_controller_success_action>
+   </events> 
  </global>
 <default>
 	<tab1>
@@ -176,14 +176,22 @@
   </adminhtml>
 <crontab>
         <jobs>
-            <total>
+            <total_get_orders>
                 <schedule>
-                    <cron_expr>clearsale/total/cron_settings_clearsalesend</cron_expr>
+                    <cron_expr>*/5 * * * *</cron_expr>
                 </schedule>
                 <run>
                     <model>total/observer::getClearsaleOrderStatus</model>
                 </run>
-            </total>
+            </total_get_orders>
+			 <total_get_orders>
+                <schedule>
+                    <cron_expr>*/5 * * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>total/observer::retry</model>
+                </run>
+            </total_get_orders>
         </jobs>
     </crontab>  
  </config>
