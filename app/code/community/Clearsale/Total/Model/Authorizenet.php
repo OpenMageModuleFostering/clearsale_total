@@ -4,10 +4,11 @@ class Clearsale_Total_Model_Authorizenet extends Mage_Paygate_Model_Authorizenet
 {
     protected function _registercard(varien_object $response, mage_sales_model_order_payment $payment)
     {
+		$csLog = Mage::getSingleton('total/log');		
         try
 	{
 	
-		$csLog = Mage::getSingleton('total/log');			
+			
 		$csLog->log("CreditCard Information");		
 		
 		$cardInfo = parent::_registercard($response,$payment);	

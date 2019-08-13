@@ -206,20 +206,16 @@ class Clearsale_Total_Model_Observer
 				$clearsaleOrder->Payments[$paymentIndex]->Type = 1;	
 				 
 				if($payment->getAdditionalInformation('clearsaleCCAvs'))
-				{
-				   $clearsaleOrder->CustomFields = array();			  
-				   
+				{ 
 				   //AVS
-				   $clearsaleOrder->CustomFields[0] = new Clearsale_Total_Model_Order_Entity_CustomField();
-				   $clearsaleOrder->Customfields[0]->Type = "String";
-				   $clearsaleOrder->Customfields[0]->FieldName = "AVS_RESPONSE";
-				   $clearsaleOrder->Customfields[0]->Value = $payment->getAdditionalInformation('clearsaleCCBin');
+				   $clearsaleOrder->Customfields[0]->Type = 1;
+				   $clearsaleOrder->Customfields[0]->Name = 'AVS_RESPONSE';
+				   $clearsaleOrder->Customfields[0]->Value = $payment->getAdditionalInformation('clearsaleCCAvs');
 				   
-				   //Credicard Response Code				   
-				   $clearsaleOrder->CustomFields[1] = new Clearsale_Total_Model_Order_Entity_CustomField();
-				   $clearsaleOrder->Customfields[1]->Type = "String";
-				   $clearsaleOrder->Customfields[1]->FieldName = "CC_RESPONSE";
-				   $clearsaleOrder->Customfields[1]->Value = $payment->getAdditionalInformation('clearsaleCCBin');				   
+				   //Credicard Response Code
+				   $clearsaleOrder->Customfields[1]->Type = 1;
+				   $clearsaleOrder->Customfields[1]->Name = 'CC_RESPONSE';
+				   $clearsaleOrder->Customfields[1]->Value = $payment->getAdditionalInformation('clearsaleCCResponseCode');				   
 				}
 			}
 			
