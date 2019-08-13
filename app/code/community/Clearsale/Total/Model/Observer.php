@@ -23,35 +23,49 @@ class Clearsale_Total_Model_Observer
 
 		if ($isActive) 
 	    {
-			$csLog->log('gravar pedido');	
+			$csLog->log('gravar pedido ' . json_encode($evt));	
 			$session = Mage::getSingleton("core/session")->getEncryptedSessionId();
 			$orderBO = Mage::getModel('total/order_business_object');	
-			$magentoOrder = $evt->getOrder();//new Mage_Sales_Model_Order();
-			$orderID = $magentoOrder->getRealOrderId();//Mage::getSingleton('checkout/session')->getQuoteId(); 	
-			//$magentoOrder->loadByIncrementId($orderID);
-			$payment = $magentoOrder->getPayment();
-			$csStatus = array('pending_clearsale','approved_clearsale','reproved_clearsale','canceled_clearsale','analysing_clearsale');
-			$CreditcardMethods = explode(",", Mage::getStoreConfig("clearsale_total/general/credicardmethod"));
-			$magentoStatus = $magentoOrder->getStatus();
+			$magentoOrder = $evt->getOrder();
 			
-			$csLog->log('Status : ' . $magentoStatus . ' ID: ' . $orderID  );
-			
-			if($payment)
-			{
-				if (!in_array($magentoStatus,$csStatus))
+			if(!empty($magentoOrder))
+			{	
+				$orderID = $magentoOrder->getRealOrderId();
+				
+				if(!$orderID)
 				{
-					
-				if (in_array($payment->getMethodInstance()->getCode(), $CreditcardMethods))
+					return;
+				}
+				
+				$payment = $magentoOrder->getPayment();
+				if($payment)
 				{
-					$order = new Clearsale_Total_Model_Order_Entity_Status();
-					$payment->setAdditionalInformation('clearsaleSessionID', $session);				
-					$order->ID = $orderID;
-					$order->Status = 'PED';
-					$orderBO->save($order);
-					$csLog->log('gravar pedido - OK');	
+					if(!$this->orderExists($orderID))
+					{		
+						$csLog->log('Sending to ClearSale OrderID - '. $orderID);
+						$CreditcardMethods = explode(",", Mage::getStoreConfig("clearsale_total/general/credicardmethod"));
+						$magentoStatus = $magentoOrder->getStatus();
+						
+						$csLog->log('Status : ' . $magentoStatus . ' ID: ' . $orderID  );
+						
+						
+							if (in_array($payment->getMethodInstance()->getCode(), $CreditcardMethods))
+							{
+								$order = new Clearsale_Total_Model_Order_Entity_Status();
+								$payment->setAdditionalInformation('clearsaleSessionID', $session);				
+								$order->ID = $orderID;
+								$order->Status = 'PED';
+								$orderBO->save($order);			 
+								$csLog->log('Sent to ClearSale OrderID - '. $orderID);
+								$this->setAsSent($orderID);
+							}
+									
+					}else
+					{
+						$csLog->log('Order Update : ID: ' . $orderID  );
+					}
 				}
-				}
-			}			
+			}
 		 }
 		}catch(Exception $e){                    
 			$csLog->log($e->getMessage());		
@@ -70,8 +84,7 @@ class Clearsale_Total_Model_Observer
 			->addFieldToFilter('status', 'analysing_clearsale');	
 			
 			if($orders)
-			{
-				
+			{	
 				foreach ($orders as $order) {
 				
 				$storeId = $order->getStoreId();
@@ -87,7 +100,7 @@ class Clearsale_Total_Model_Observer
 						$orderId = $order->getRealOrderId();		
 						$requestOrder =  Mage::getModel('total/order_entity_requestorder');
 						$requestOrder->ApiKey =  Mage::getStoreConfig("clearsale_total/general/key",$storeId);
-						$requestOrder->LoginToken = $authResponse->Token->Value;;
+						$requestOrder->LoginToken = $authResponse->Token->Value;
 						$requestOrder->AnalysisLocation = $analysisLocation;
 						$requestOrder->Orders = array();
 						$requestOrder->Orders[0] = $orderId;			
@@ -194,7 +207,9 @@ class Clearsale_Total_Model_Observer
 			$clearsaleOrder->Payments[$paymentIndex]->Amount = number_format(floatval($order->getGrandTotal()), 2, ".", "");
 			$clearsaleOrder->Payments[$paymentIndex]->Type = 14;	
 			$clearsaleOrder->Payments[$paymentIndex]->CardType = 4;
-			$clearsaleOrder->Payments[$paymentIndex]->Date = $date;			 
+			$clearsaleOrder->Payments[$paymentIndex]->Date = $date;	
+
+			$payment->setAdditionalInformation('clearsale', 'ok');
 			
 			if($payment->getAdditionalInformation('clearsaleCCNumber'))
 			{
@@ -216,7 +231,28 @@ class Clearsale_Total_Model_Observer
 				   $clearsaleOrder->Customfields[1]->Type = 1;
 				   $clearsaleOrder->Customfields[1]->Name = 'CC_RESPONSE';
 				   $clearsaleOrder->Customfields[1]->Value = $payment->getAdditionalInformation('clearsaleCCResponseCode');				   
-				}
+				}				
+			}
+			
+			if($payment->getAdditionalInformation('avsPostalCodeResponseCode'))
+			{ 
+			   $clearsaleOrder->Customfields[0]->Type = 1;
+			   $clearsaleOrder->Customfields[0]->Name = 'avsPostalCodeResponseCode';
+			   $clearsaleOrder->Customfields[0]->Value = $payment->getAdditionalInformation('avsPostalCodeResponseCode');
+			} 
+			
+			if($payment->getAdditionalInformation('avsStreetAddressResponseCode'))
+			{ 				
+			   $clearsaleOrder->Customfields[1]->Type = 1;
+			   $clearsaleOrder->Customfields[1]->Name = 'avsStreetAddressResponseCode';
+			   $clearsaleOrder->Customfields[1]->Value = $payment->getAdditionalInformation('avsStreetAddressResponseCode');				   
+			}
+			
+			if($payment->getAdditionalInformation('cvvResponseCode'))
+			{ 				
+			   $clearsaleOrder->Customfields[1]->Type = 1;
+			   $clearsaleOrder->Customfields[1]->Name = 'CVV_RESULT_CODE';
+			   $clearsaleOrder->Customfields[1]->Value = $payment->getAdditionalInformation('cvvResponseCode');				   
 			}
 			
 			$countryCode =  $billingAddress->getCountry();
@@ -542,6 +578,16 @@ class Clearsale_Total_Model_Observer
 		
 		
 	}
+	
+	public function setAsSent($orderID)
+	{
+		require_once('app/Mage.php');
+		Mage::app();
+		$order = new Mage_Sales_Model_Order();			
+		$order->loadByIncrementId($orderID);
+		$payment = $order->getPayment();
+		$payment->setAdditionalInformation('clearsale', 'ok');		
+	}
 			
     			
 	public function getSpecificOrder($orderID)
@@ -571,7 +617,7 @@ class Clearsale_Total_Model_Observer
 			 	{		
 			 		$requestOrder =  Mage::getModel('total/order_entity_requestorder');
 			 		$requestOrder->ApiKey =  Mage::getStoreConfig("clearsale_total/general/key",$storeId);
-			 		$requestOrder->LoginToken = $authResponse->Token->Value;;
+			 		$requestOrder->LoginToken = $authResponse->Token->Value;
 			 		$requestOrder->AnalysisLocation = $analysisLocation;
 			 		$requestOrder->Orders = array();
 			 		$requestOrder->Orders[0] = $orderID;			
@@ -582,6 +628,54 @@ class Clearsale_Total_Model_Observer
 		}
 	}
 	
+	public function orderExists($orderID)
+	{
+		try {
+		require_once('app/Mage.php');
+		Mage::app();
+		
+		$csLog = Mage::getSingleton('total/log');
+		
+		$isActive = Mage::getStoreConfig("clearsale_total/general/active");
+		$return = true;
+					
+			$order = new Mage_Sales_Model_Order();			
+			$order->loadByIncrementId($orderID);
+			
+		if($order)
+		{
+			$csStatus = array('approved_clearsale','reproved_clearsale','canceled_clearsale','analysing_clearsale','holded','complete','canceled','closed');
+			
+			$payment = $order->getPayment();
+			
+			$history = $order->getStatusHistoryCollection();
+			
+			if($history)
+			{
+				foreach($history as $comment)
+				{
+					$csLog->log('HistoryStatus -> ' .$comment->getStatus());
+					
+					if (in_array($comment->getStatus(),$csStatus))
+					{
+						return true;
+					}
+				}				
+			}
+			
+			return false;
+		}
+		
+		return $return;
+		}
+		catch (Exception $e) {                    		
+			$csLog->log('OrderExistsFunction: '.$e->getMessage());
+			return false;
+		}
+	}
+	
+
+
 	
 	public function sendPendingOrders()
 	{
@@ -602,8 +696,7 @@ class Clearsale_Total_Model_Observer
             $from = date('Y-m-d H:i:s', $lastTime);
 		
 			$orders = Mage::getModel('sales/order')->getCollection()
-			->addFieldToFilter('status', 'pending_clearsale')
-			->addAttributeToFilter('created_at', array('from' => $from, 'to' => $to));	
+			->addFieldToFilter('status', 'pending_clearsale');
 						
 			if($orders)
 			{
@@ -613,6 +706,9 @@ class Clearsale_Total_Model_Observer
 					{	
 						$orderId =  $order->getRealOrderId();					
 						$response = $this->sendSpecificOrder($orderId);
+						
+						
+						$csLog->log('Response: ' .$response);
 						
 						if($response->HttpCode == 200)
 						{
