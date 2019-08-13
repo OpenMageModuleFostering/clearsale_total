@@ -1,4 +1,4 @@
-<layout version="0.1.0">
+<layout version="1.0.0">
     <checkout_onepage_index>
 	    <reference name="head">
            <block type="core/template" name="meta_checkout" template="total/meta_checkout.phtml" />
@@ -58,4 +58,14 @@
             <block type="core/template" name="mapper" template="total/mapper.phtml" />
         </reference>
 	</contacts_index_index>
+	<cms_index_index>
+    <reference name="content">
+      <reference name="head">
+           <block type="core/template" name="meta_contact" template="total/meta_home.phtml" />
+        </reference>
+		<reference name="content">
+            <block type="core/template" name="mapper" template="total/mapper.phtml" />
+        </reference>
+    </reference>
+</cms_index_index>
 </layout>

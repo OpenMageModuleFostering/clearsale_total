@@ -1,14 +1,17 @@
 
 <?php
 
-require_once("/app/Mage.php");
+$user = Mage::getStoreConfig("clearsale_total/general/clientid");
 
-$user = Mage::getStoreConfig("tab1/general/clientid");
+if(strlen($user) > 10)
+{
+$user =  substr($user, 0, 10);
+}
 
 ?>   
 
 <?php 
-$isActive = Mage::getStoreConfig("tab1/general/active");
+$isActive = Mage::getStoreConfig("clearsale_total/general/active");
 
 if ($isActive) 
 {

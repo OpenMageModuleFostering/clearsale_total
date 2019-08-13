@@ -1,16 +1,19 @@
 
 <?php
 
-require_once("/app/Mage.php");
-
-$user = Mage::getStoreConfig("tab1/general/clientid");
-$prefix =  Mage::getStoreConfig("tab1/general/environment"); 
+$user = Mage::getStoreConfig("clearsale_total/general/clientid");
+$prefix =  Mage::getStoreConfig("clearsale_total/general/environment"); 
 $sessionID = Mage::getSingleton("core/session")->getEncryptedSessionId();
+
+if(strlen($user) > 10)
+{
+$user =  substr($user, 0, 10);
+}
 
 ?>   
 
 <?php 
-$isActive = Mage::getStoreConfig("tab1/general/active");
+$isActive = Mage::getStoreConfig("clearsale_total/general/active");
 
 if ($isActive) 
 {

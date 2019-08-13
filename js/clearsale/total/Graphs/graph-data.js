@@ -26,7 +26,7 @@ var isUpdate = false;
 
 
 jQuery(document).ready(function () {
-
+	jQuery.support.cors = true;
 	SetRequestDashboard();
 	BindChart();
 
@@ -53,22 +53,22 @@ function logArrayElements(element, index, array) {
 function RequestLogin() {
 
 	var requestLogin = {
-Login: {
-Apikey: apiKey,
-ClientID: user,
-ClientSecret: password
+	Login: {
+	Apikey: apiKey,
+	ClientID: user,
+	ClientSecret: password
 		}
 	};
 
 	requestLogin = JSON.stringify(requestLogin);
 
 	jQuery.ajax({
-url: prefix + "api/auth/Login",
-type: "POST",
-contentType: "application/json",
-data: requestLogin,
-async: false,
-success: function (result) {
+	url: prefix + "api/auth/Login",
+	type: "POST",
+	contentType: "application/json",
+	data: requestLogin,
+	async: false,
+	success: function (result) {
 			loginToken = result.Token.Value;
 		}, error: function (xhr, textStatus, errorThrown) {
 			console.log(textStatus + ':' + errorThrown + ' | ' + xhr.responseText);
@@ -255,17 +255,17 @@ async: true
 		if(!isUpdate)
 		{
 			SLAChart = new Morris.Bar({
-										element: 'description-chart',
-										data: SLAData,
-										xkey: 'Label',
-										ykeys: ['Value'],
-										labels: ['Total'],
-										barColors: ['#FAA519'],
-										barRatio: 0.4,
-										xLabelAngle: 35,
-										hideHover: 'auto',
-										resize: true
-									});
+element: 'description-chart',
+data: SLAData,
+xkey: 'Label',
+ykeys: ['Value'],
+labels: ['Total'],
+barColors: ['#FAA519'],
+barRatio: 0.4,
+xLabelAngle: 35,
+hideHover: 'auto',
+resize: true
+			});
 		}else
 		{
 			SLAChart.setData(SLAData);
@@ -295,11 +295,11 @@ async: true
 		if(!isUpdate)
 		{
 			ApprovalChart = Morris.Donut({
-											element: 'approval-chart',
-											data: ApprovalData,
-											colors: ['#009900', '#990000'],
-											resize: true
-										});
+element: 'approval-chart',
+data: ApprovalData,
+colors: ['#009900', '#990000'],
+resize: true
+			});
 		}else
 		{
 			ApprovalChart.setData(ApprovalData);
@@ -345,16 +345,11 @@ function MountTableLastOrders(LastOrders) {
 
 		html += "<tr>";
 		html += "<td>"+jQuery.timeago(data.OrderActionData)+"</td>";
-		html += "<td>"+"<a href=" + "https://pci.clearsale.com.br/Appv4/Operacao/Analise/PedidoPorCodigoEntidade?codigoEntidade="
+		html += "<td>"+"<a href=" + prefix+ "/App/Operacao/Analise/PedidoPorCodigoEntidade?codigoEntidade="
 		+ data.ClientOrderId + "&entidadeID=10&visualizacao=true&t=" + loginToken + "&a=" + apiKey + " target=\"_blank\">" + data.ClientOrderId +"</a></td>";
-		html += "<td>"+ "$ 4,340,00" +"</td>";
+		html += "<td>"+ "$ "+ data.TotalOrderValue.toFixed(2) +"</td>";
 		html += setStatus(data.Status);
 		html += "</tr>";
-
-		//html += "<a href=" + "https://pci.clearsale.com.br/Appv4/Operacao/Analise/PedidoPorCodigoEntidade?codigoEntidade="
-		//    + data.ClientOrderId + "&entidadeID=10&visualizacao=true&t=" + loginToken + "&a=" + apiKey + " target=\"_blank\">";
-		//html += "<span class=\"badge\">" + jQuery.timeago(data.OrderActionData) + "</span> <i class=\"fa fa-fw fa-check\"></i>" + data.ClientOrderId + " " + data.Status;
-		//html += "</a>";
 	});
 
 	html+="</tbody>";
