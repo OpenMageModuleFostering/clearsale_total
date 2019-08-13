@@ -8,4 +8,11 @@ class Clearsale_Total_Model_Order_Entity_ResponseOrder
 	}
 }
 
+class Clearsale_Total_Model_Order_Entity_OrderStatus
+{
+ public $ID;
+ public $Status;
+ public $Score;
+}
+
 

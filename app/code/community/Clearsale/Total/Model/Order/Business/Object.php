@@ -118,12 +118,15 @@ class  Clearsale_Total_Model_Order_Business_Object
 			$connection = Mage::getSingleton('core/resource')->getconnection('core_read'); 
 			$query = "SELECT * FROM `clearsale_order_control` WHERE `dt_sent` = '0000-00-00 00:00:00' AND `attempts` <=".$maxAttemps;
 			$results = $connection->fetchAll($query);
-
+			
+			var_dump($results);
+			
 			return $results;
                         			
 		} catch (Exception $e){  
 			$CSLog = Mage::getSingleton('total/log');			
 			$CSLog->log($e->getMessage());	 
+			echo $e->getMessage();
 		}  
 		
 	}
@@ -143,7 +146,7 @@ class  Clearsale_Total_Model_Order_Business_Object
 	
 	public function getOrderControl()
 	{
-            $maxAttemps = 5;
+            $maxAttemps = 7;
 	   return $this->selectClearsaleOrderControl($maxAttemps);
 	}
 	

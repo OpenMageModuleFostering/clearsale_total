@@ -57,10 +57,22 @@ class Clearsale_Total_Model_Observer
                                                             $orderBO->save($orderResponse->Orders[0]);							
 							}
 						}
-					}else
+					}
+					else if($response->Body) 
 					{
-					 $message[1] = $response->Body;
-					 $orderBO->createOrderControl($order->getRealOrderId(),json_encode($message));
+					  if(strpos(strtolower($response->Body),"exists"))
+					  {
+					   $orderStatus = new Clearsale_Total_Model_Order_Entity_Status();
+					   $orderStatus->ID = $incrementId;	
+					   $orderStatus->Status = "AMA";
+					   $orderStatus->Score = "";
+					   $orderBO->save($orderStatus);
+					  }
+					}
+					else
+					{
+					  $message[1] = $response->Body;
+					  $orderBO->createOrderControl($order->getRealOrderId(),json_encode($message));
 					} 					
 				}
 			}			
@@ -531,7 +543,7 @@ class Clearsale_Total_Model_Observer
 				$order = new Mage_Sales_Model_Order(); 
 				$order->loadByIncrementId($orderId);
 				$isReanalysis = false;
-                $storeId = $order->getStoreId();
+				$storeId = $order->getStoreId();
 				$payment = $order->getPayment();
 				$environment = Mage::getStoreConfig("clearsale_total/general/environment",$storeId);
 				$analysisLocation = Mage::getStoreConfig("clearsale_total/general/analysislocation",$storeId);
@@ -613,14 +625,16 @@ class Clearsale_Total_Model_Observer
 
 		
 		if ($isActive) 
-		{			
+		{
+		try
+		 {		
 		
 		 $time = time();
 		 $to = date('Y-m-d H:i:s', $time);
 		 $lastTime = $time - 86400; // 60*60*24
                  $from = date('Y-m-d H:i:s', $lastTime);
 
-		echo "lastTime $lastTime <br />";	
+		  echo "lastTime $lastTime <br />";	
 		
 			$orders = Mage::getModel('sales/order')->getCollection()
 			->addFieldToFilter('status', array('null' => true))
@@ -653,6 +667,12 @@ class Clearsale_Total_Model_Observer
 				
 				}
 			}
+		 } 
+		catch (Exception $e) 
+		 {			
+		  $csLog = Mage::getSingleton('total/log');			
+		  $csLog->log($e->getMessage());			
+		 }
 		}
 	
 	}
@@ -703,7 +723,23 @@ class Clearsale_Total_Model_Observer
                                                              $orderBO->setOrderControl($orderId,true,$attemps,$message);							    
 							}
                                                     }
-						}else
+						}
+						else if($response->Body) 
+						{
+						$csLog = Mage::getSingleton('total/log');			
+						$csLog->log("Atualizando o pedido 1");
+						if(strpos(strtolower($response->Body),"exists"))
+						{
+						 $csLog->log("Atualizando o pedido 2");
+						 $orderStatus = new Clearsale_Total_Model_Order_Entity_Status();
+						 $orderStatus->ID = $orderControl["order_id"];	
+						 $orderStatus->Status = "AMA";
+						 $orderStatus->Score = "";
+						 $orderBO->save($orderStatus);
+						 $orderBO->setOrderControl($orderStatus->ID,true,$attemps,$message);
+						}
+						}
+						else
 						{
 						 $messages[$attemps] = $response->Body;
 						 $message= json_encode($messages);				 
