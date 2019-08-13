@@ -9,7 +9,7 @@ $apiKey = Mage::getStoreConfig("clearsale_total/general/key");
 $password = Mage::getStoreConfig("clearsale_total/general/clientsecret");
 $user = Mage::getStoreConfig("clearsale_total/general/clientid");
 $environment =  Mage::getStoreConfig("clearsale_total/general/environment"); 
-
+$urlClientArea = "http://app.clear.sale";
 $obj = Mage::getModel('total/observer');
 
 $authBO = Mage::getModel('total/auth_business_object');
@@ -20,7 +20,15 @@ if($authResponse)
 {
 $token = $authResponse->Token->Value;
 }
-$interval = "4";
+if(isset($environment))
+{
+ if(strpos($environment, 'sandbox'))
+ {
+   $urlClientArea = "https://sandbox.clearsale.com.br/App/clientarea/";
+ }
+}
+
+$interval = "1";
 $script = "<script>";
 $script .= "var apiKey = \"".$apiKey."\";";
 $script .= "var loginToken = \"".$token."\";";
@@ -28,6 +36,7 @@ $script .= "var user = \"".$user."\";";
 $script .= "var password = \"".$password."\";";
 $script .= "var interval = ".$interval.";";
 $script .= "var prefix = \"".$environment."\";";
+$script .= "var enviromentRoot = \"".$urlClientArea."\";";
 $script .= "</script>";
 
 echo $script;

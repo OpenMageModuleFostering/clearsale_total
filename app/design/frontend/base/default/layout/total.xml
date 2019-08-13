@@ -1,4 +1,12 @@
 <layout version="1.0.0">
+	<clearsale_total_index>
+            <reference name="root">
+                <action method="setTemplate"><template>page/1column.phtml</template></action>
+            </reference>
+            <reference name="content">
+                <block type="core/template" name="hello" template="total/getorderstatus.phtml"/>
+            </reference>
+        </clearsale_total_index>
     <checkout_onepage_index>
 	    <reference name="head">
            <block type="core/template" name="meta_checkout" template="total/meta_checkout.phtml" />

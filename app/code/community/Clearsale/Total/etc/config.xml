@@ -2,7 +2,7 @@
 <config>
   <modules>
     <Clearsale_Total>
-      <version>1.1.1</version>
+      <version>1.1.2</version>
     </Clearsale_Total>
   </modules>
   <global>
@@ -29,8 +29,11 @@
       <total>
         <class>Clearsale_Total_Block</class>
       </total>
-	  <adminhtml>
-      </adminhtml>
+	<adminhtml>
+        <rewrite>
+           <sales_order_view>Clearsale_Total_Block_Adminhtml_Sales_Order_View</sales_order_view>
+        </rewrite>
+	</adminhtml>
 	  <front>
 	  </front>
     </blocks>
@@ -74,6 +77,24 @@
    		</observers>
    	</checkout_onepage_controller_success_action>
    </events> 
+ <frontend>
+	<routers>
+		<clearsale_total>
+		<use>standard</use>
+		<args>
+			<module>Clearsale_Total</module>
+			<frontName>clearsale</frontName>
+		</args>
+		</clearsale_total>
+	</routers>
+	<layout>
+		<updates>
+			<total>
+				<file>total.xml</file>
+			</total>
+		</updates>
+	</layout>
+ </frontend>
  </global>
 <default>
 	<tab1>
@@ -174,24 +195,4 @@
       </updates>
     </layout>
   </adminhtml>
-<crontab>
-        <jobs>
-            <total_get_orders>
-                <schedule>
-                    <cron_expr>*/5 * * * *</cron_expr>
-                </schedule>
-                <run>
-                    <model>total/observer::getClearsaleOrderStatus</model>
-                </run>
-            </total_get_orders>
-	    <total_retry_orders>
-                <schedule>
-                    <cron_expr>*/5 * * * *</cron_expr>
-                </schedule>
-                <run>
-                    <model>total/observer::retry</model>
-                </run>
-            </total_retry_orders>
-        </jobs>
-    </crontab>  
  </config>

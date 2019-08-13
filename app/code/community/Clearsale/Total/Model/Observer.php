@@ -94,10 +94,7 @@ class Clearsale_Total_Model_Observer
 			
 	public function getClearsaleOrderStatus()
 	{
-		require_once('app/Mage.php');
-		Mage::app();
-		
-		$isActive = Mage::getStoreConfig("clearsale_total/general/active");
+	 $isActive = Mage::getStoreConfig("clearsale_total/general/active");
 
 		
 		if ($isActive) 

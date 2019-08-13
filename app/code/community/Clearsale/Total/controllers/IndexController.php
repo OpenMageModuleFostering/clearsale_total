@@ -4,11 +4,18 @@
  {
     public function indexAction()
     {
-      $this->loadLayout();
-      $this->renderLayout();
-    }
-    public function somethingAction()
-    {
-      echo 'test nameMethod';
+       //Get current layout state
+        $this->loadLayout();          
+ 
+        $block = $this->getLayout()->createBlock(
+            'Mage_Core_Block_Template',
+            'total',
+            array('template' => 'total/getorderstatus.phtml')
+        );
+ 		
+        $this->getLayout()->getBlock('root')->setTemplate('page/1column.phtml');
+        $this->getLayout()->getBlock('content')->append($block);
+        $this->_initLayoutMessages('core/session'); 
+        $this->renderLayout();
     }
  }

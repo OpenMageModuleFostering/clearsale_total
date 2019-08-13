@@ -221,7 +221,7 @@ async: true
 		dataChart = { Data: [] }
 		reprovedData.forEach(logArrayElements)
 		DeclineData = dataChart.Data;
-		if(!isUpdate)
+		if(!isUpdate || DeclineChart.data == null)
 		{
 			DeclineChart = new Morris.Donut({
 element: 'decline-chart',
@@ -292,7 +292,7 @@ async: true
 		orderStatusSummary.forEach(logArrayElements);
 		ApprovalData = dataChart.Data;
 		
-		if(!isUpdate)
+		if(!isUpdate || ApprovalChart.data == null)
 		{
 			ApprovalChart = Morris.Donut({
 element: 'approval-chart',
@@ -345,9 +345,9 @@ function MountTableLastOrders(LastOrders) {
 
 		html += "<tr>";
 		html += "<td>"+jQuery.timeago(data.OrderActionData)+"</td>";
-		html += "<td>"+"<a href=" + prefix+ "/App/Operacao/Analise/PedidoPorCodigoEntidade?codigoEntidade="
-		+ data.ClientOrderId + "&entidadeID=10&visualizacao=true&t=" + loginToken + "&a=" + apiKey + " target=\"_blank\">" + data.ClientOrderId +"</a></td>";
-		html += "<td>"+ "$ "+ data.TotalOrderValue.toFixed(2) +"</td>";
+		html += "<td>" + "<a href=\""+ enviromentRoot +"/Order/DetailByOrderId/"
+		+ data.ClientOrderId + "\" target=\"_blank\">" + data.ClientOrderId + "</a></td>";
+		html += "<td>" + "$ " + data.TotalOrderValue.toFixed(2) + "</td>";
 		html += setStatus(data.Status);
 		html += "</tr>";
 	});

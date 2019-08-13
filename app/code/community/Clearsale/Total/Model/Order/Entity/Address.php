@@ -7,6 +7,7 @@ class Clearsale_Total_Model_Order_Entity_Address
 	public $State;
 	public $ZipCode;
 	public $County;
+	public $Comp;
 	public $Number;
 	public $Country;
 }
