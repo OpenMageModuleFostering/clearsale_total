@@ -1,16 +1,19 @@
 {
-    "name": "OpenMageModuleFostering/ClearSale_Total",
+    "name": "OpenMageModuleFostering\/ClearSale_Total",
     "type": "magento-module",
     "license": "OSL",
     "homepage": "",
     "description": "100% chargeback guarantee and a outsourced fraud management solution offering the final decision.",
     "authors": [
-    {
-        "name": "ClearSale Dev Team",
-        "email": "support@clear.sale"
-    }
-],
+        {
+            "name": "ClearSale Dev Team",
+            "email": "support@clear.sale"
+        }
+    ],
     "suggest": {
-        "magento-hackathon/magento-composer-installer": "*"
-    }
+        "magento-hackathon\/magento-composer-installer": "*"
+    },
+    "keywords": [
+        "openmage-module"
+    ]
 }
